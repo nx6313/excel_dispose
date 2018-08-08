@@ -3,9 +3,9 @@
     <el-steps :active="active" align-center>
       <el-step v-for="(step, stepIndex) in steps" :key="stepIndex" :title="step.title" :icon="step.icon" :description="step.description"></el-step>
     </el-steps>
-    <router-view class="router-view-wrap"/>
     <el-button type="warning" class="next-step-btn" @click="toPreStep" v-if="active > 0 && active < steps.length">上一步</el-button>
     <el-button type="primary" class="next-step-btn" @click="toNextStep" v-if="active < steps.length - 1">下一步</el-button>
+    <router-view class="router-view-wrap"/>
   </div>
 </template>
 

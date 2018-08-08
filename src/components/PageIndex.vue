@@ -10,10 +10,18 @@
       </div>
     </template>
     <template v-if="curStep === 1">
+      <el-row>
+        <el-button v-for="(rule, ruleIndex) in rules" :key="ruleIndex" :type="rule.select ? 'success' : 'info'" size="mini" :plain="!rule.select" :loading="rule.select" @click="selectRule(ruleIndex)">{{rule.txt}}</el-button>
+      </el-row>
+      <div class="tip" v-if="selectRuleData !== null && selectRuleData.des">
+        <p>{{selectRuleData.des}}</p>
+      </div>
       <!-- <el-transfer v-model="value1" :data="data"></el-transfer> -->
     </template>
     <template v-if="curStep === 2">
-      <el-button type="primary" icon="el-icon-download" circle @click="exportExcel"></el-button>
+      <el-tooltip class="item" effect="light" content="点击下载文件" placement="bottom">
+        <el-button type="primary" icon="el-icon-download" circle @click="exportExcel"></el-button>
+      </el-tooltip>
       <a ref="downlink" style="display: none"></a>
     </template>
   </div>
@@ -33,7 +41,40 @@ export default {
       selectFileMd5s: [],
       selectFiles: [],
       excelFileTitles: [],
-      excelDatas: []
+      excelDatas: [],
+      rules: [
+        {
+          key: 'rule-1',
+          txt: '规则一',
+          select: false,
+          des: '规则一规则一规则一规则一规则一规则一规则一规则一规则一规则一规则一'
+        },
+        {
+          key: 'rule-2',
+          txt: '规则二',
+          select: false,
+          des: '规则二规则二规则二规则二规则二规则二规则二规则二规则二规则二'
+        },
+        {
+          key: 'rule-3',
+          txt: '规则三',
+          select: false,
+          des: '规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三规则三'
+        },
+        {
+          key: 'rule-4',
+          txt: '规则四',
+          select: false,
+          des: '规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四规则四'
+        },
+        {
+          key: 'rule-5',
+          txt: '规则五',
+          select: false,
+          des: '规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五规则五'
+        }
+      ],
+      selectRuleData: null
     }
   },
   mounted () {
@@ -72,7 +113,7 @@ export default {
           lock: true,
           spinner: 'el-icon-loading',
           text: '文件导入中',
-          background: 'rgba(240, 240, 240, 0.8)'
+          background: 'rgba(0, 0, 0, 0.4)'
         })
         var spark = new SparkMD5()
         var reader = new FileReader()
@@ -201,6 +242,13 @@ export default {
       }
       o += String.fromCharCode.apply(null, new Uint8Array(data.slice(l * w)))
       return o
+    },
+    selectRule (ruleIndex) {
+      for (let i in this.rules) {
+        this.rules[i].select = false
+      }
+      this.rules[ruleIndex].select = true
+      this.selectRuleData = this.rules[ruleIndex]
     }
   }
 }
@@ -210,5 +258,27 @@ export default {
 .data-tables {
   position: relative;
   margin-top: 0.9rem;
+}
+
+.tip {
+  position: relative;
+  background-color: #dcebff;
+  color: #313131;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0.6rem 14rem;
+  text-align: left;
+  padding: 0 0.2rem 0 0.8rem;
+  font-size: 0.8rem;
+}
+
+.tip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.3rem;
+  background-color: #0a92bb;
 }
 </style>
