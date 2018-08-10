@@ -106,7 +106,12 @@ export default {
         data[0][k] = k
       }
       data = data.concat(this.excelDatas[0])
-      this.downloadExl(data, '文件名')
+      this.$prompt('请输入生成文件的名称', '下载提示', {
+        confirmButtonText: '确定下载',
+        cancelButtonText: '取消下载'
+      }).then(({ value }) => {
+        this.downloadExl(data, value)
+      }).catch(() => {})
     },
     importFile () {
       var f = this.$refs['excel-file-input'].files[0]
