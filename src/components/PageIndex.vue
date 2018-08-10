@@ -28,6 +28,7 @@
 </template>
 
 <script>
+import Vue from 'vue'
 import { Loading } from 'element-ui'
 import SparkMD5 from 'spark-md5'
 
@@ -42,6 +43,8 @@ export default {
       selectFiles: [],
       excelFileTitles: [],
       excelDatas: [],
+      sheetRadioSelectComp: null,
+      sheetRadioKey: 1,
       rules: [
         {
           key: 'rule-1',
@@ -108,13 +111,6 @@ export default {
     importFile () {
       var f = this.$refs['excel-file-input'].files[0]
       if (f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f.type === 'application/vnd.ms-excel') {
-        this.loadingService = Loading.service({
-          fullscreen: true,
-          lock: true,
-          spinner: 'el-icon-loading',
-          text: '文件导入中',
-          background: 'rgba(0, 0, 0, 0.4)'
-        })
         var spark = new SparkMD5()
         var reader = new FileReader()
         this.resetExcelFileInput = true
@@ -130,12 +126,26 @@ export default {
               type: 'binary'
             })
           }
-          let json = this.$moment.XLSX.utils.sheet_to_json(this.wb.Sheets[this.wb.SheetNames[0]])
-          this.dealFile(f, json, spark)
+          if (this.wb.SheetNames.length > 1) {
+            this.showSheetSelectDialog(this.wb.SheetNames, f, spark)
+          } else {
+            this.loadingService = Loading.service({
+              fullscreen: true,
+              lock: true,
+              spinner: 'el-icon-loading',
+              text: '文件导入中',
+              background: 'rgba(0, 0, 0, 0.4)'
+            })
+            let json = this.$moment.XLSX.utils.sheet_to_json(this.wb.Sheets[this.wb.SheetNames[0]])
+            this.dealFile(f, json, spark, 0)
+          }
         }
         reader.onerror = (e) => {
           this.loadingService.close()
           this.$message.error(e)
+        }
+        reader.onloadend = () => {
+          this.resetExcelFileInput = false
         }
         if (this.rABS) {
           reader.readAsArrayBuffer(f)
@@ -150,9 +160,64 @@ export default {
         })
       }
     },
-    dealFile (f, data, spark) {
+    showSheetSelectDialog (sheets, f, spark) {
+      var sheetRadioSelectCompThat = null
+      Vue.component('sheetRadioSelectComp', {
+        template: `
+        <el-radio-group v-model="sheetSelectModel">
+          <el-radio :label="sheetIndex" v-for="(sheet, sheetIndex) in sheets" :key="sheetIndex" :style="{ 'display': 'block', 'margin-left': '0' }">{{sheet}}</el-radio>
+        </el-radio-group>
+        `,
+        data () {
+          return {
+            sheets: [],
+            sheetSelectModel: ''
+          }
+        },
+        mounted () {
+          this.sheets = sheets
+          sheetRadioSelectCompThat = this
+        }
+      })
+      this.sheetRadioSelectComp = Vue.component('sheetRadioSelectComp')
+      var h = this.$createElement
+      // var sheetRadios = []
+      // for (let s = 0; s < sheets.length; s++) {
+      //   sheetRadios.push(h('el-radio', { label: 'sheet-' + s, style: 'display: block; margin-left: 0;' }, sheets[s]))
+      // }
+      this.$msgbox({
+        title: '选择一个sheet',
+        message: h(this.sheetRadioSelectComp, { 'key': this.sheetRadioKey++ }),
+        showCancelButton: true,
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        beforeClose: (action, instance, done) => {
+          if (action === 'confirm') {
+            instance.confirmButtonLoading = true
+            instance.confirmButtonText = '执行中...'
+            setTimeout(() => {
+              this.loadingService = Loading.service({
+                fullscreen: true,
+                lock: true,
+                spinner: 'el-icon-loading',
+                text: '文件导入中',
+                background: 'rgba(0, 0, 0, 0.4)'
+              })
+              let json = this.$moment.XLSX.utils.sheet_to_json(this.wb.Sheets[this.wb.SheetNames[Number(sheetRadioSelectCompThat.sheetSelectModel)]])
+              this.dealFile(f, json, spark, sheetRadioSelectCompThat.sheetSelectModel)
+              done()
+              setTimeout(() => {
+                instance.confirmButtonLoading = false
+              }, 100)
+            }, 200)
+          } else {
+            done()
+          }
+        }
+      }).then(action => {}).catch(() => {})
+    },
+    dealFile (f, data, spark, sheetIndex) {
       this.loadingService.close()
-      this.resetExcelFileInput = false
       if (data.length <= 0) {
         this.$message({
           message: '文件为空',
@@ -161,14 +226,14 @@ export default {
         })
       } else {
         var fileMd5 = spark.end()
-        if (this.selectFileMd5s.indexOf(fileMd5) >= 0) {
+        if (this.selectFileMd5s.indexOf(fileMd5 + ',' + sheetIndex) >= 0) {
           this.$message({
             message: '文件已存在',
             type: 'warning',
             duration: 1800
           })
         } else {
-          this.selectFileMd5s.push(fileMd5)
+          this.selectFileMd5s.push(fileMd5 + ',' + sheetIndex)
           this.selectFiles.push(f)
           this.excelDatas.push(data)
           var excelTitles = []
